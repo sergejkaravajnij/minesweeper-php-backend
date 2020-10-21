@@ -8,12 +8,14 @@ services:
       dockerfile: docker/app/Dockerfile
     working_dir: /var/www
     environment:
-      - APP_ENV=${APP_ENV}
-      - APP_SECRET=${APP_SECRET}
-      - DATABASE_URL=${DATABASE_URL}
+      APP_ENV: ${APP_ENV}
+      APP_SECRET: ${APP_SECRET}
+      APP_DEBUG: ${APP_DEBUG}
+      DATABASE_URL: ${DATABASE_URL}
+      XDEBUG_CONFIG: ${XDEBUG_CONFIG}
     volumes:
-      - ./docker/vhost.conf:/etc/apache2/sites-available/000-default.conf
-      - ./docker/php_custom.ini:/usr/local/etc/php/conf.d/local.ini
+      - ./docker/app/vhost.conf:/etc/apache2/sites-available/000-default.conf
+      - ./docker/app/php_custom.ini:/usr/local/etc/php/conf.d/local.ini
       - ./symfony:/var/www
       - ./symfony/vendor/:/var/www/vendor:cached
     ports:
@@ -28,10 +30,10 @@ services:
       - db_data:/var/lib/mysql
     restart: on-failure
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     networks:
       - minesweeper
     ports:

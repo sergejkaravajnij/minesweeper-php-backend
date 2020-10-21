@@ -9,10 +9,6 @@ RUN apt-get update \
     && pecl install xdebug \
     && docker-php-ext-enable xdebug
 
-ENV DATABASE_URL=$DATABASE_URL
-ENV APP_ENV=$APP_ENV
-ENV APP_SECRET=$APP_SECRET
-
 #configure apache2
 RUN a2enmod rewrite
 COPY docker/app/vhost.conf /etc/apache2/sites-available/000-default.conf
@@ -25,7 +21,7 @@ COPY symfony/ /var/www
 ENV COMPOSER_ALLOW_SUPERUSER 1
 # DATABASE_URL must be set in order to allow the composer to finish post-install scripts
 ENV DATABASE_URL $DATABASE_URL
-ENV APP_ENV=$APP_ENV
-ENV APP_SECRET=$APP_SECRET
+ENV APP_ENV $APP_ENV
+ENV APP_SECRET $APP_SECRET
 
 RUN composer install --prefer-source --no-interaction
