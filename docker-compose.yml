@@ -1,0 +1,46 @@
+version: '3.6'
+services:
+  backend:
+    container_name: minesweeper-php-restapi
+    restart: on-failure
+    build:
+      context: ./
+      dockerfile: docker/app/Dockerfile
+    working_dir: /var/www
+    environment:
+      - APP_ENV=${APP_ENV}
+      - APP_SECRET=${APP_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+    volumes:
+      - ./docker/vhost.conf:/etc/apache2/sites-available/000-default.conf
+      - ./docker/php_custom.ini:/usr/local/etc/php/conf.d/local.ini
+      - ./symfony:/var/www
+      - ./symfony/vendor/:/var/www/vendor:cached
+    ports:
+      - 8025:80
+    networks:
+      - minesweeper
+  db:
+    image: mysql:5.7
+    container_name: minesweeper-mysql-db
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: on-failure
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    networks:
+      - minesweeper
+    ports:
+      - 3325:3306
+volumes:
+  db_data:
+    driver: local
+
+#Docker Networks
+networks:
+  minesweeper:
+    driver: bridge
