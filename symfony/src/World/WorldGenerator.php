@@ -9,7 +9,7 @@ class WorldGenerator
     /**
      * @param WorldInputParams $inputParams
      *
-     * @return WorldNode[][]
+     * @return array
      */
     public function generate(WorldInputParams $inputParams) {
         // spread bombs randomly into array
@@ -21,22 +21,12 @@ class WorldGenerator
         shuffle($arrayOfBombs);
 
         // put them to the world
-        /**
-         * @var WorldNode[][] $map
-         */
         $map = [];
         for ($x = 0; $x < $size; $x++) {
             $row = [];
             for ($y = 0; $y < $size; $y++) {
                 $setBomb = array_pop($arrayOfBombs);
-                $node = new WorldNode();
-                $node
-                    ->setX($x)
-                    ->setY($y)
-                    ->setBomb($setBomb)
-                    ->setBombsAround(0);
-
-                $row[] = $node;
+                $row[] = $setBomb ? 'b' : 0;
             }
             $map[] = $row;
         }
@@ -44,11 +34,9 @@ class WorldGenerator
         // calc bombs around of each node
         for ($x = 0; $x < $size; $x++) {
             for ($y = 0; $y < $size; $y++) {
-                $node = $map[$x][$y];
-                if (!$node->hasBomb()) {
-                    $node = $this->calcBombsAround($node, $map);
+                if ($map[$x][$y] !== 'b') {
+                    $map[$x][$y] = $this->calcBombsAround($x, $y, $map);
                 }
-                $map[$x][$y] = $node;
             }
         }
 
@@ -56,18 +44,16 @@ class WorldGenerator
     }
 
     /**
-     * @param WorldNode $node
-     * @param WorldNode[][] $map
+     * @param int $nodeX
+     * @param int $nodeY
+     * @param array $map
      *
-     * @return WorldNode
+     * @return int
      */
-    private function calcBombsAround(WorldNode $node, array $map): WorldNode {
-        $nodeX = $node->getX();
-        $nodeY = $node->getY();
-
+    private function calcBombsAround(int $nodeX, int $nodeY, array $map): int {
         $size = count($map);
 
-        $bombsAround = $node->getBombsAround();
+        $bombsAround = 0;
 
         for ($x = $nodeX - 1; $x <= $nodeX + 1; $x++) {
             if ($x < 0 || $x >= $size) {
@@ -78,12 +64,10 @@ class WorldGenerator
                     continue;
                 }
                 $adjNode = $map[$x][$y];
-                $bombsAround += $adjNode->hasBomb() ? 1 : 0;
+                $bombsAround += $adjNode === 'b' ? 1 : 0;
             }
         }
 
-        $node->setBombsAround($bombsAround);
-
-        return $node;
+        return $bombsAround;
     }
 }
