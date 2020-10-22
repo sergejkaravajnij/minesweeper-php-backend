@@ -5,11 +5,11 @@ fos_rest:
   #    routing_loader: true
   #    view:
   #        view_response_listener:  true
-  #  exception:
-  #    enabled: true
-  #    exception_controller: \App\Controller\ExceptionController::exceptionAction
-  #    codes:
-  #      \App\Exception\PublicException: 404
+  exception:
+    enabled: true
+    #    exception_controller: \App\Controller\ExceptionController::exceptionAction
+#    codes:
+#      \App\Exception\PublicException: 404
   #        messages:
   #            App\Exception\MyException: Forbidden area.
   format_listener:
