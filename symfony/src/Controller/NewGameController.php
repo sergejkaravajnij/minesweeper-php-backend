@@ -4,10 +4,12 @@
 namespace App\Controller;
 
 
+use App\Entity\WorldMap;
 use App\Exception\PublicException;
 use App\Response\SuccessResponse;
 use App\World\WorldGenerator;
 use App\World\WorldInputParams;
+use Doctrine\ORM\EntityManagerInterface;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
 use Symfony\Component\HttpFoundation\Response;
@@ -33,6 +35,10 @@ class NewGameController extends AbstractFOSRestController
      * @var WorldGenerator
      */
     private $worldGenerator;
+    /**
+     * @var EntityManagerInterface
+     */
+    private $entityManager;
 
     /**
      * NewGameController constructor.
@@ -40,11 +46,18 @@ class NewGameController extends AbstractFOSRestController
      * @param WorldGenerator $worldGenerator
      * @param ValidatorInterface $validator
      * @param SerializerInterface $serializer
+     * @param EntityManagerInterface $entityManager
      */
-    public function __construct(WorldGenerator $worldGenerator, ValidatorInterface $validator, SerializerInterface $serializer) {
+    public function __construct(
+        WorldGenerator $worldGenerator,
+        ValidatorInterface $validator,
+        SerializerInterface $serializer,
+        EntityManagerInterface $entityManager
+    ) {
         $this->validator = $validator;
         $this->serializer = $serializer;
         $this->worldGenerator = $worldGenerator;
+        $this->entityManager = $entityManager;
     }
 
 
@@ -74,9 +87,21 @@ class NewGameController extends AbstractFOSRestController
 
         // save world to database and return the game id as response
 
+        $worldEntity = new WorldMap();
+        $worldEntity->setMap($world);
+
+        $this->entityManager->persist($worldEntity);
+        $this->entityManager->flush();
+
+        $data = [
+            'size' => $size,
+            'bombs' => $bombs,
+            'map_id' => $worldEntity->getId()
+        ];
+
         $response = new SuccessResponse();
 
-        $response->setData(['OK']);
+        $response->setData($data);
         $view = $this->view($response);
 
         return $this->getViewHandler()->handle($view);
