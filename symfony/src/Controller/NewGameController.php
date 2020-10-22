@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Exception\PublicException;
 use App\Response\SuccessResponse;
+use App\World\WorldGenerator;
 use App\World\WorldInputParams;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
@@ -28,16 +29,22 @@ class NewGameController extends AbstractFOSRestController
      * @var SerializerInterface
      */
     private $serializer;
+    /**
+     * @var WorldGenerator
+     */
+    private $worldGenerator;
 
     /**
      * NewGameController constructor.
      *
+     * @param WorldGenerator $worldGenerator
      * @param ValidatorInterface $validator
      * @param SerializerInterface $serializer
      */
-    public function __construct(ValidatorInterface $validator, SerializerInterface $serializer) {
+    public function __construct(WorldGenerator $worldGenerator, ValidatorInterface $validator, SerializerInterface $serializer) {
         $this->validator = $validator;
         $this->serializer = $serializer;
+        $this->worldGenerator = $worldGenerator;
     }
 
 
@@ -62,6 +69,10 @@ class NewGameController extends AbstractFOSRestController
         if (count($errors) > 0) {
             throw new PublicException($errors->get(0)->getMessage());
         }
+
+        $world = $this->worldGenerator->generate($worldParams);
+
+        // save world to database and return the game id as response
 
         $response = new SuccessResponse();
 
