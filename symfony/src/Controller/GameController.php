@@ -5,7 +5,10 @@ namespace App\Controller;
 
 
 use App\Entity\WorldMap;
+use App\Exception\PrivateException;
 use App\Exception\PublicException;
+use App\GameResponse\NewGameResponse;
+use App\GameResponse\TurnResponse;
 use App\Response\SuccessResponse;
 use App\World\TurnInputParams;
 use App\World\WorldGenerator;
@@ -15,6 +18,8 @@ use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Serializer\Exception\ExceptionInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -41,6 +46,10 @@ class GameController extends AbstractFOSRestController
      * @var EntityManagerInterface
      */
     private $entityManager;
+    /**
+     * @var NormalizerInterface
+     */
+    private $normalizer;
 
     /**
      * GameController constructor.
@@ -48,18 +57,21 @@ class GameController extends AbstractFOSRestController
      * @param WorldGenerator $worldGenerator
      * @param ValidatorInterface $validator
      * @param SerializerInterface $serializer
+     * @param NormalizerInterface $normalizer
      * @param EntityManagerInterface $entityManager
      */
     public function __construct(
         WorldGenerator $worldGenerator,
         ValidatorInterface $validator,
         SerializerInterface $serializer,
+        NormalizerInterface $normalizer,
         EntityManagerInterface $entityManager
     ) {
         $this->validator = $validator;
         $this->serializer = $serializer;
         $this->worldGenerator = $worldGenerator;
         $this->entityManager = $entityManager;
+        $this->normalizer = $normalizer;
     }
 
 
@@ -70,6 +82,8 @@ class GameController extends AbstractFOSRestController
      * @param int $bombs
      *
      * @return Response
+     * @throws ExceptionInterface
+     * @throws PrivateException
      * @throws PublicException
      */
     public function createAction(int $size, int $bombs) {
@@ -95,15 +109,22 @@ class GameController extends AbstractFOSRestController
         $this->entityManager->persist($worldEntity);
         $this->entityManager->flush();
 
-        $data = [
-            'size' => $size,
-            'bombs' => $bombs,
-            'map_id' => $worldEntity->getId()
-        ];
+        $newGameResponse = new NewGameResponse();
+        $newGameResponse
+            ->setSize($size)
+            ->setBombs($bombs)
+            ->setMapId($worldEntity->getId());
+
+        // validate that response is full and has required types
+        $errors = $this->validator->validate($newGameResponse);
+        if (count($errors) > 0) {
+            throw new PrivateException((string)$errors);
+        }
 
         $response = new SuccessResponse();
 
-        $response->setData($data);
+        $response->setData($this->normalizer->normalize($newGameResponse));
+
         $view = $this->view($response);
 
         return $this->getViewHandler()->handle($view);
@@ -115,6 +136,8 @@ class GameController extends AbstractFOSRestController
      * @param Request $request
      *
      * @return Response
+     * @throws ExceptionInterface
+     * @throws PrivateException
      * @throws PublicException
      */
     public function turnAction(Request $request) {
@@ -149,24 +172,29 @@ class GameController extends AbstractFOSRestController
             throw new PublicException('Out of the map');
         }
 
-        $response = new SuccessResponse();
+        $turnResponse = new TurnResponse();
 
         if ($map[$x][$y] === 'b') {
             // boom
-            $data = [
-                'die' => 1,
-                'open' => []
-            ];
-
+            // todo build an array of cells with bombs
+            $turnResponse
+                ->setDie(true)
+                ->setOpen([[$x, $y, 'b']]);
         } else {
             //expose number or empty area
-            $data = [
-                'die' => 0,
-                'open' => []
-            ];
+            // todo build an array of cells being opened
+            $turnResponse
+                ->setDie(false)
+                ->setOpen([[$x, $y, 0]]);
         }
 
-        $response->setData($data);
+        $errors = $this->validator->validate($turnResponse);
+        if (count($errors) > 0) {
+            throw new PrivateException((string)$errors);
+        }
+
+        $response = new SuccessResponse();
+        $response->setData($this->normalizer->normalize($turnResponse));
 
         $view = $this->view($response);
 
