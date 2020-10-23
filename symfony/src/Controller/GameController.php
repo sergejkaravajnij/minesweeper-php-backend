@@ -13,6 +13,7 @@ use App\Response\SuccessResponse;
 use App\World\TurnInputParams;
 use App\World\WorldGenerator;
 use App\World\WorldInputParams;
+use App\World\WorldService;
 use Doctrine\ORM\EntityManagerInterface;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
@@ -50,6 +51,10 @@ class GameController extends AbstractFOSRestController
      * @var NormalizerInterface
      */
     private $normalizer;
+    /**
+     * @var WorldService
+     */
+    private $worldService;
 
     /**
      * GameController constructor.
@@ -59,19 +64,22 @@ class GameController extends AbstractFOSRestController
      * @param SerializerInterface $serializer
      * @param NormalizerInterface $normalizer
      * @param EntityManagerInterface $entityManager
+     * @param WorldService $worldService
      */
     public function __construct(
         WorldGenerator $worldGenerator,
         ValidatorInterface $validator,
         SerializerInterface $serializer,
         NormalizerInterface $normalizer,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        WorldService $worldService
     ) {
         $this->validator = $validator;
         $this->serializer = $serializer;
         $this->worldGenerator = $worldGenerator;
         $this->entityManager = $entityManager;
         $this->normalizer = $normalizer;
+        $this->worldService = $worldService;
     }
 
 
@@ -176,16 +184,19 @@ class GameController extends AbstractFOSRestController
 
         if ($map[$x][$y] === 'b') {
             // boom
-            // todo build an array of cells with bombs
+            $bombsMap = $this->worldService->getBombsMap($map);
             $turnResponse
                 ->setDie(true)
-                ->setOpen([[$x, $y, 'b']]);
+                ->setOpen($bombsMap);
         } else {
             //expose number or empty area
-            // todo build an array of cells being opened
+            $expose = $this->worldService
+                ->setMap($map)
+                ->getAreaToExpose($x, $y);
+
             $turnResponse
                 ->setDie(false)
-                ->setOpen([[$x, $y, 0]]);
+                ->setOpen($expose);
         }
 
         $errors = $this->validator->validate($turnResponse);
