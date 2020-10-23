@@ -7,21 +7,23 @@ namespace App\Controller;
 use App\Entity\WorldMap;
 use App\Exception\PublicException;
 use App\Response\SuccessResponse;
+use App\World\TurnInputParams;
 use App\World\WorldGenerator;
 use App\World\WorldInputParams;
 use Doctrine\ORM\EntityManagerInterface;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
- * Class NewGameController
+ * Class GameController
  *
  * @package App\Controller
  */
-class NewGameController extends AbstractFOSRestController
+class GameController extends AbstractFOSRestController
 {
     /**
      * @var ValidatorInterface
@@ -41,7 +43,7 @@ class NewGameController extends AbstractFOSRestController
     private $entityManager;
 
     /**
-     * NewGameController constructor.
+     * GameController constructor.
      *
      * @param WorldGenerator $worldGenerator
      * @param ValidatorInterface $validator
@@ -62,7 +64,7 @@ class NewGameController extends AbstractFOSRestController
 
 
     /**
-     * @Rest\Route(path="/new-game/size/{size<\d+>}/bombs/{bombs<\d+>}", methods={"GET"})
+     * @Rest\Route(path="/game/new/size/{size<\d+>}/bombs/{bombs<\d+>}", methods={"GET"})
      *
      * @param int $size
      * @param int $bombs
@@ -102,6 +104,70 @@ class NewGameController extends AbstractFOSRestController
         $response = new SuccessResponse();
 
         $response->setData($data);
+        $view = $this->view($response);
+
+        return $this->getViewHandler()->handle($view);
+    }
+
+    /**
+     * @Rest\Route(path="/game/turn", methods={"POST"})
+     *
+     * @param Request $request
+     *
+     * @return Response
+     * @throws PublicException
+     */
+    public function turnAction(Request $request) {
+        $data = json_decode($request->getContent(), true);
+        $mapId = $data['map_id'] ?? '';
+        $coords = $data['coords'] ?? '';
+
+        $inputParams = new TurnInputParams();
+        $inputParams
+            ->setMapId($mapId)
+            ->setCoords($coords);
+
+        $errors = $this->validator->validate($inputParams);
+
+        if (count($errors) > 0) {
+            throw new PublicException($errors->get(0)->getMessage());
+        }
+
+        $world = $this->entityManager->find(WorldMap::class, $mapId);
+
+        if (!$world) {
+            throw new PublicException("'Map doesn't exist'");
+        }
+
+        $map = $world->getMap();
+
+        $size = count($map);
+
+        $x = $coords[0];
+        $y = $coords[1];
+        if ($x >= $size || $y >= $size) {
+            throw new PublicException('Out of the map');
+        }
+
+        $response = new SuccessResponse();
+
+        if ($map[$x][$y] === 'b') {
+            // boom
+            $data = [
+                'die' => 1,
+                'open' => []
+            ];
+
+        } else {
+            //expose number or empty area
+            $data = [
+                'die' => 0,
+                'open' => []
+            ];
+        }
+
+        $response->setData($data);
+
         $view = $this->view($response);
 
         return $this->getViewHandler()->handle($view);
