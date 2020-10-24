@@ -1,0 +1,9 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: Minesweeper API
+            description: Minesweeper back-end API
+            version: 1.0.0
+    areas: # to filter documented areas
+        path_patterns:
+            - ^/(?!/doc$) # Accepts routes under / except /doc
