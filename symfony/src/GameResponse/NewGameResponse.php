@@ -26,7 +26,7 @@ class NewGameResponse
     /**
      * @var UuidInterface
      * @Assert\NotBlank
-     * @Assert\Type(type="UuidInterface")
+     * @Assert\Type("Ramsey\Uuid\UuidInterface")
      */
     private $mapId;
 
