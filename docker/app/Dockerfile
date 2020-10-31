@@ -19,9 +19,3 @@ WORKDIR /var/www
 COPY symfony/ /var/www
 
 ENV COMPOSER_ALLOW_SUPERUSER 1
-# DATABASE_URL must be set in order to allow the composer to finish post-install scripts
-ENV DATABASE_URL $DATABASE_URL
-ENV APP_ENV $APP_ENV
-ENV APP_SECRET $APP_SECRET
-
-RUN composer install --prefer-source --no-interaction

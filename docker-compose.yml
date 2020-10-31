@@ -1,6 +1,8 @@
 version: '3.6'
 services:
   backend:
+    depends_on:
+      - db
     container_name: minesweeper-php-restapi
     restart: on-failure
     build:
